@@ -8,7 +8,6 @@ import re
 from typing import Any
 
 from nonebot import logger
-
 from pallas.api.paths import resource_dir
 
 _PROF_CN: dict[str, str] = {
@@ -144,9 +143,7 @@ def find_operator_by_name(name: str) -> dict[str, Any] | None:
     return None
 
 
-def pick_operator_for_intrusion(
-    *, pallas_chance: float = 0.06
-) -> dict[str, Any] | None:
+def pick_operator_for_intrusion(*, pallas_chance: float = 0.06) -> dict[str, Any] | None:
     """乱入干员；小概率固定帕拉斯。"""
     if random.random() < pallas_chance:
         pallas = find_operator_by_name(PALLAS_OPERATOR_NAME)
@@ -247,19 +244,13 @@ def build_intrusion_ctx(op: dict[str, Any]) -> dict[str, str]:
     if isinstance(skills, list):
         if len(skills) >= 1 and isinstance(skills[0], dict):
             s1_name = str(skills[0].get("name", "") or "")
-            s1_desc = skill_description_for_display(
-                str(skills[0].get("description", "") or "")
-            )
+            s1_desc = skill_description_for_display(str(skills[0].get("description", "") or ""))
         if len(skills) >= 2 and isinstance(skills[1], dict):
             s2_name = str(skills[1].get("name", "") or "")
-            s2_desc = skill_description_for_display(
-                str(skills[1].get("description", "") or "")
-            )
+            s2_desc = skill_description_for_display(str(skills[1].get("description", "") or ""))
         if len(skills) >= 3 and isinstance(skills[2], dict):
             s3_name = str(skills[2].get("name", "") or "")
-            s3_desc = skill_description_for_display(
-                str(skills[2].get("description", "") or "")
-            )
+            s3_desc = skill_description_for_display(str(skills[2].get("description", "") or ""))
     prof = str(op.get("profession", ""))
     sub_id = str(op.get("sub_profession_id") or op.get("subProfessionId") or "")
 
@@ -273,15 +264,11 @@ def build_intrusion_ctx(op: dict[str, Any]) -> dict[str, str]:
             pi = random.choice(cand)
             row = skills[pi]
             sk_name = str(row.get("name", "") or "")
-            sk_desc = skill_description_for_display(
-                str(row.get("description", "") or "")
-            )
+            sk_desc = skill_description_for_display(str(row.get("description", "") or ""))
             ord_cn = ("一", "二", "三")[pi]
             sk_label = f"其{ord_cn}技能"
             kind = classify_picked_skill_kind(sk_name, sk_desc, prof)
-            kind_cn = {"heal": "治疗向", "attack": "攻击向", "neutral": "中性"}.get(
-                kind, "中性"
-            )
+            kind_cn = {"heal": "治疗向", "attack": "攻击向", "neutral": "中性"}.get(kind, "中性")
 
     return {
         "op_id": str(op.get("id", "")),
@@ -303,9 +290,7 @@ def build_intrusion_ctx(op: dict[str, Any]) -> dict[str, str]:
         "picked_skill_kind": kind,
         "picked_skill_kind_cn": kind_cn,
         "avatar_url": str(op.get("avatar_url", "") or ""),
-        "is_pallas": "1"
-        if str(op.get("name", "") or "").strip() == PALLAS_OPERATOR_NAME
-        else "",
+        "is_pallas": "1" if str(op.get("name", "") or "").strip() == PALLAS_OPERATOR_NAME else "",
     }
 
 
@@ -314,8 +299,9 @@ async def resolve_operator_avatar_image(op_id: str) -> bytes | None:
     cid = str(op_id or "").strip()
     if not cid:
         return None
-    from pallas_plugin_duel.config import plugin_config
     from pallas.core.domain.arknights.duel_sync import operator_avatar_bytes
+
+    from pallas_plugin_duel.config import plugin_config
 
     data = operator_avatar_bytes(cid)
     if data:

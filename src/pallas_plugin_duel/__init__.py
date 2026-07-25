@@ -11,6 +11,17 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.plugin import PluginMetadata
 from nonebot.rule import Rule
 from nonebot.typing import T_State
+from pallas.api.metadata import (
+    PLUGIN_EXTRA_VERSION,
+    PLUGIN_HOMEPAGE,
+    PLUGIN_MENU_TEMPLATE,
+    SCENE_GROUP,
+    join_usage,
+    usage_line,
+)
+from pallas.api.perm import group_message_permission_for_command
+from pallas.api.platform import text_matches_plugin_fanout
+from pallas.product.llm.knowledge.declare import knowledge_source_row
 
 from pallas_plugin_duel import duel_penalty  # noqa: F401 — 注册惩罚消息 matcher
 from pallas_plugin_duel.config import plugin_config
@@ -33,19 +44,13 @@ from pallas_plugin_duel.duel_round_engine import (
     try_claim_duel_user_reply,
 )
 from pallas_plugin_duel.duel_session import clear_duel_pair, start_duel_pair
-from pallas.api.perm import group_message_permission_for_command
-from pallas.api.metadata import (
-    PLUGIN_EXTRA_VERSION,
-    PLUGIN_HOMEPAGE,
-    PLUGIN_MENU_TEMPLATE,
-)
-from pallas.api.metadata import SCENE_GROUP, join_usage, usage_line
-from pallas.api.platform import text_matches_plugin_fanout
-from pallas.product.llm.knowledge.declare import knowledge_source_row
 
 
 @get_driver().on_startup
 async def _register_duel_plugin_coord() -> None:
+    from pallas.api.platform_fleet_probe import register_fleet_probe
+    from pallas.core.plugin_coord.duel import register_duel_coord
+
     from pallas_plugin_duel.arknights_ops import reload_operators_cache
     from pallas_plugin_duel.duel_bots import (
         list_group_online_bot_ids,
@@ -62,8 +67,6 @@ async def _register_duel_plugin_coord() -> None:
         is_duel_paired_bot_traffic,
         should_skip_repeater_learn,
     )
-    from pallas.core.plugin_coord.duel import register_duel_coord
-    from pallas.api.platform_fleet_probe import register_fleet_probe
 
     register_duel_coord(
         get_duel_pair=get_duel_pair,
@@ -209,10 +212,7 @@ __plugin_meta__ = PluginMetadata(
                     },
                     {
                         "title": "事件重载",
-                        "content": (
-                            "群管可发送「决斗事件重载」热更新剧情包与干员表；"
-                            "进行中的抢答会被取消。"
-                        ),
+                        "content": ("群管可发送「决斗事件重载」热更新剧情包与干员表；进行中的抢答会被取消。"),
                         "keywords": "重载,事件,剧情,干员表",
                     },
                 ],
@@ -224,9 +224,7 @@ __plugin_meta__ = PluginMetadata(
 BLOCK_LIST: list[int] = []
 
 
-async def is_reload_duel_events(
-    bot: Bot, event: GroupMessageEvent, state: T_State
-) -> bool:
+async def is_reload_duel_events(bot: Bot, event: GroupMessageEvent, state: T_State) -> bool:
     if event.group_id in BLOCK_LIST:
         return False
     return event.get_plaintext().strip() == "决斗事件重载"
@@ -324,9 +322,7 @@ async def run_duel_match(
     total_rounds: int | None = None,
 ) -> None:
     """开团：群级占用与指令 CD；command_gate=ok 表示入口已抢占。"""
-    if not duel_handler_is_narrator(
-        event, challenger_id, defender_id, dual_bot=dual_bot
-    ):
+    if not duel_handler_is_narrator(event, challenger_id, defender_id, dual_bot=dual_bot):
         if command_gate == "ok":
             end_duel_group(event.group_id)
         return
@@ -343,9 +339,7 @@ async def run_duel_match(
     else:
         gate = command_gate
     if gate == "busy":
-        await send_duel_user_reply(
-            matcher, event.group_id, "此群台上正有决斗未散，且待战歌落幕。"
-        )
+        await send_duel_user_reply(matcher, event.group_id, "此群台上正有决斗未散，且待战歌落幕。")
         return
     if gate == "cooldown":
         return
@@ -404,9 +398,7 @@ async def duel_bot_pair(
         return
     gate = await begin_duel_command(event.group_id, command_id="duel.duel")
     if gate == "busy":
-        await send_duel_user_reply(
-            matcher, event.group_id, "此群台上正有决斗未散，且待战歌落幕。"
-        )
+        await send_duel_user_reply(matcher, event.group_id, "此群台上正有决斗未散，且待战歌落幕。")
         return
     if gate == "cooldown":
         return
@@ -446,9 +438,7 @@ async def duel(matcher, bot: Bot, event: GroupMessageEvent, state: T_State) -> N
                 "双 @ 决斗仅支持两名牛牛；人类请 @ 一名对手。",
             )
             return
-        await duel_bot_pair(
-            matcher, bot, event, ats[0], ats[1], total_rounds=total_rounds
-        )
+        await duel_bot_pair(matcher, bot, event, ats[0], ats[1], total_rounds=total_rounds)
         return
 
     if len(ats) == 0:
@@ -456,9 +446,7 @@ async def duel(matcher, bot: Bot, event: GroupMessageEvent, state: T_State) -> N
             return
         if not await try_claim_duel_message(event):
             return
-        await send_duel_user_reply(
-            matcher, event.group_id, "台上还缺一位对手，无法开演。"
-        )
+        await send_duel_user_reply(matcher, event.group_id, "台上还缺一位对手，无法开演。")
         return
 
     defender = ats[0]
@@ -475,9 +463,7 @@ async def duel(matcher, bot: Bot, event: GroupMessageEvent, state: T_State) -> N
     if not duel_handler_is_narrator(event, challenger, defender, dual_bot=False):
         return
 
-    await run_duel_match(
-        matcher, bot, event, challenger, defender, total_rounds=total_rounds
-    )
+    await run_duel_match(matcher, bot, event, challenger, defender, total_rounds=total_rounds)
 
 
 @duel_msg.handle()

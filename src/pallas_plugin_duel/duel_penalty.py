@@ -7,18 +7,19 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from nonebot import get_bots, logger, on_message
-from nonebot.adapters import Bot  # noqa: TC002
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, permission
 from nonebot.exception import ActionFailed
 from nonebot.rule import Rule
+from pallas.api.config import BotConfig, GroupConfig
+from pallas.api.utils import is_bot_admin
 
 from pallas_plugin_duel.config import plugin_config
 from pallas_plugin_duel.duel_bots import is_bot_qq
 from pallas_plugin_duel.duel_message import append_duel_message, duel_at, duel_text
-from pallas.api.config import BotConfig, GroupConfig
-from pallas.api.utils import is_bot_admin
 
 if TYPE_CHECKING:
+    from nonebot.adapters import Bot
+
     from pallas_plugin_duel.duel_round_engine import DuelStacks
 
 _PENALTIES_KEY = "duel_penalties"
@@ -45,9 +46,7 @@ class ActivePenalty:
 _restore_tasks: dict[tuple[int, int], asyncio.Task[None]] = {}
 
 
-def resolve_winner_loser(
-    challenger_id: str, defender_id: str, stacks: DuelStacks
-) -> tuple[str, str] | None:
+def resolve_winner_loser(challenger_id: str, defender_id: str, stacks: DuelStacks) -> tuple[str, str] | None:
     """与终幕胜负一致；平局返回 None。"""
     chp, dhp = stacks.challenger_hp, stacks.defender_hp
     if chp <= 0 and dhp <= 0:
@@ -73,9 +72,7 @@ def _penalty_to_dict(pen: ActivePenalty) -> dict[str, Any]:
     }
 
 
-def _penalty_from_dict(
-    group_id: int, user_id: int, raw: dict[str, Any]
-) -> ActivePenalty | None:
+def _penalty_from_dict(group_id: int, user_id: int, raw: dict[str, Any]) -> ActivePenalty | None:
     try:
         kind = PenaltyKind(str(raw["kind"]))
         return ActivePenalty(
@@ -142,8 +139,7 @@ async def get_active_penalty_async(group_id: int, user_id: int) -> ActivePenalty
 
 
 async def fetch_member_card(bot_id: int, group_id: int, user_id: int) -> str:
-    from pallas.api.platform import get_member_card_as_bot
-    from pallas.api.platform import bot_has_local_connection
+    from pallas.api.platform import bot_has_local_connection, get_member_card_as_bot
 
     if bot_has_local_connection(bot_id):
         bot = get_bots().get(str(bot_id))
@@ -152,7 +148,9 @@ async def fetch_member_card(bot_id: int, group_id: int, user_id: int) -> str:
         try:
             info = await bot.call_api(
                 "get_group_member_info",
-                **{"group_id": group_id, "user_id": int(user_id), "no_cache": True},
+                group_id=group_id,
+                user_id=int(user_id),
+                no_cache=True,
             )
         except ActionFailed:
             return ""
@@ -161,8 +159,7 @@ async def fetch_member_card(bot_id: int, group_id: int, user_id: int) -> str:
 
 
 async def set_member_card(bot_id: int, group_id: int, user_id: int, card: str) -> bool:
-    from pallas.api.platform import set_group_card_as_bot
-    from pallas.api.platform import bot_has_local_connection
+    from pallas.api.platform import bot_has_local_connection, set_group_card_as_bot
 
     if bot_has_local_connection(bot_id):
         bot = get_bots().get(str(bot_id))
@@ -171,13 +168,13 @@ async def set_member_card(bot_id: int, group_id: int, user_id: int, card: str) -
         try:
             await bot.call_api(
                 "set_group_card",
-                **{"group_id": group_id, "user_id": int(user_id), "card": card[:60]},
+                group_id=group_id,
+                user_id=int(user_id),
+                card=card[:60],
             )
             return True
         except ActionFailed as err:
-            logger.debug(
-                f"duel penalty set_group_card failed gid={group_id} uid={user_id}: {err}"
-            )
+            logger.debug(f"duel penalty set_group_card failed gid={group_id} uid={user_id}: {err}")
             return False
     return await set_group_card_as_bot(bot_id, group_id, int(user_id), card)
 
@@ -186,9 +183,7 @@ def _penalty_duration_sec() -> float:
     return float(plugin_config.duel_penalty_minutes * 60)
 
 
-async def send_human_penalty_notice(
-    group_id: int, handler_bot_id: int, user_id: int
-) -> None:
+async def send_human_penalty_notice(group_id: int, handler_bot_id: int, user_id: int) -> None:
     """败者惩罚文案仅发一次。"""
     bot = get_bots().get(str(handler_bot_id))
     if bot is None:
@@ -200,9 +195,7 @@ async def send_human_penalty_notice(
     try:
         await bot.send_group_msg(group_id=group_id, message=body)
     except ActionFailed as err:
-        logger.debug(
-            f"duel penalty human notice failed gid={group_id} uid={user_id}: {err}"
-        )
+        logger.debug(f"duel penalty human notice failed gid={group_id} uid={user_id}: {err}")
 
 
 async def _restore_one(group_id: int, user_id: int) -> None:
@@ -373,6 +366,4 @@ async def _(bot: Bot, event: GroupMessageEvent) -> None:
     try:
         await inst.send_group_msg(group_id=event.group_id, message=reply)
     except ActionFailed as err:
-        logger.debug(
-            f"duel penalty bot reply failed gid={event.group_id} uid={event.user_id}: {err}"
-        )
+        logger.debug(f"duel penalty bot reply failed gid={event.group_id} uid={event.user_id}: {err}")

@@ -8,19 +8,18 @@ import re
 from typing import TYPE_CHECKING, Any
 
 from nonebot import get_bots, logger
-
-from pallas.api.platform import normalize_message_time
 from pallas.api.platform import (
     GROUP_ONLINE_TTL_SEC,
     NS_FLEET,
     NS_LOCAL_CONNECTED,
     clear_group_online_cache,
     get_cached_group_bot_ids,
+    is_fleet_bot_qq,
+    normalize_message_time,
     resolve_local_connected_bots_in_group,
     store_cached_group_bot_ids,
 )
 from pallas.core.platform.shard import context as shard_ctx
-from pallas.api.platform import is_fleet_bot_qq
 
 if TYPE_CHECKING:
     from nonebot.adapters.onebot.v11 import GroupMessageEvent
@@ -49,11 +48,7 @@ def user_id_from_member_row(row: Any) -> int | None:
     if isinstance(row, dict):
         uid = row.get("user_id") or row.get("uin") or row.get("qq")
     else:
-        uid = (
-            getattr(row, "user_id", None)
-            or getattr(row, "uin", None)
-            or getattr(row, "qq", None)
-        )
+        uid = getattr(row, "user_id", None) or getattr(row, "uin", None) or getattr(row, "qq", None)
     if uid is None:
         return None
     try:
@@ -98,9 +93,7 @@ def parse_group_member_list_user_ids(raw: Any) -> set[int]:
     return set()
 
 
-async def probe_fleet_bots_in_group(
-    caller: Any, group_id: int, catalog: frozenset[int]
-) -> list[int]:
+async def probe_fleet_bots_in_group(caller: Any, group_id: int, catalog: frozenset[int]) -> list[int]:
     """并发 get_group_member_info 确认本群内的 fleet 牛。"""
     sem = asyncio.Semaphore(8)
 
@@ -169,8 +162,8 @@ async def resolve_unified_group_online_bot_ids(group_id: int) -> list[int]:
 
 async def resolve_shard_group_online_bot_ids(group_id: int) -> list[int]:
     """分片：解析本群可用 fleet 牛。"""
-    from pallas.api.platform import get_catalog_bot_ids
     from pallas.api.platform import (
+        get_catalog_bot_ids,
         get_cluster_online_bot_ids,
         pick_local_query_bot,
     )
@@ -306,8 +299,7 @@ async def fleet_bot_confirmed_in_group(bot: Any, group_id: int) -> bool:
 
 async def list_local_fleet_bots_in_group(group_id: int) -> list[int]:
     """本 worker 已连接且能确认在本群的 fleet 牛。"""
-    from pallas.api.platform import get_catalog_bot_ids
-    from pallas.api.platform import pick_local_query_bot
+    from pallas.api.platform import get_catalog_bot_ids, pick_local_query_bot
 
     caller = pick_local_query_bot()
     if caller is None:
@@ -329,9 +321,7 @@ async def list_local_fleet_bots_in_group(group_id: int) -> list[int]:
     out: list[int] = []
     for bid in sorted(scope):
         try:
-            await caller.get_group_member_info(
-                group_id=group_id, user_id=int(bid), no_cache=True
-            )  # type: ignore[union-attr]
+            await caller.get_group_member_info(group_id=group_id, user_id=int(bid), no_cache=True)  # type: ignore[union-attr]
         except Exception:
             continue
         out.append(int(bid))
@@ -379,9 +369,7 @@ def is_bot_qq(qq: str) -> bool:
         return False
 
 
-def duel_narrator_bot_id(
-    challenger_id: str, defender_id: str, *, dual_bot: bool
-) -> int | None:
+def duel_narrator_bot_id(challenger_id: str, defender_id: str, *, dual_bot: bool) -> int | None:
     """应由哪只牛主持发幕；人 vs 人 返回 None，由消息抢占决定。"""
     if dual_bot:
         return min(int(challenger_id), int(defender_id))
