@@ -5,6 +5,11 @@
 
 ## [Unreleased]
 
+
+## [$new] - $TODAY
+
+- chore(ci): 对齐 ruff 0.16 与主仓 ruff.toml，修复 lint
+
 ## [4.0.10] - 2026-06-27
 - docs(readme): 命令权限默认等级改用中文展示
 
