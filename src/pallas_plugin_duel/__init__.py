@@ -20,7 +20,7 @@ from pallas.api.metadata import (
     usage_line,
 )
 from pallas.api.perm import group_message_permission_for_command
-from pallas.api.platform import text_matches_plugin_fanout
+from pallas.api.platform import llm_command_tool_row, text_matches_plugin_fanout
 from pallas.product.llm.knowledge.declare import knowledge_source_row
 
 from pallas_plugin_duel import duel_penalty  # noqa: F401 — 注册惩罚消息 matcher
@@ -125,6 +125,31 @@ __plugin_meta__ = PluginMetadata(
             {"id": "duel.duel", "cd_sec": 5},
             {"id": "duel.cage", "cd_sec": 5},
             {"id": "duel.reload_events", "cd_sec": 10},
+        ],
+        "llm_tools": [
+            llm_command_tool_row(
+                name="duel.cage",
+                command_id="duel.cage",
+                description="随机两只在线牛牛开八角笼决斗。用户要求决斗、八角笼、对战时使用。",
+                parameters={"type": "object", "properties": {}},
+                command_template="八角笼牛",
+            ),
+            llm_command_tool_row(
+                name="duel.duel",
+                command_id="duel.duel",
+                description="与指定 QQ 决斗。需提供对手 QQ；用户明确点名决斗时使用。",
+                parameters={
+                    "type": "object",
+                    "properties": {
+                        "opponent_qq": {
+                            "type": "string",
+                            "description": "对手 QQ 号",
+                        },
+                    },
+                    "required": ["opponent_qq"],
+                },
+                command_template="牛牛决斗 [CQ:at,qq={opponent_qq}]",
+            ),
         ],
         "ingress_fanout": {
             "scope": "always",
