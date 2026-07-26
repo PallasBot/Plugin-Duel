@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [4.0.16] - 2026-07-26
+
+- feat(llm_tools): 为口令工具补充口语 hints
+
 ## [4.0.15] - 2026-07-26
 
 - fix: 将 Rule/handler 用到的 `Bot` / `Event` 改为运行时导入，避免 NoneBot 依赖解析刷 NameError
