@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [4.0.15] - 2026-07-26
+
+- fix: 将 Rule/handler 用到的 `Bot` / `Event` 改为运行时导入，避免 NoneBot 依赖解析刷 NameError
+
 ## [4.0.14] - 2026-07-26
 
 - feat(config): WebUI 配置字段增加 ui_group 分组与 ui_order 排序

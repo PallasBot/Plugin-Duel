@@ -7,6 +7,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Any
 
 from nonebot import get_bots, logger, on_message
+from nonebot.adapters import Bot  # noqa: TC002  # NoneBot 依赖解析需要运行时可见
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, permission
 from nonebot.exception import ActionFailed
 from nonebot.rule import Rule
@@ -18,8 +19,6 @@ from pallas_plugin_duel.duel_bots import is_bot_qq
 from pallas_plugin_duel.duel_message import append_duel_message, duel_at, duel_text
 
 if TYPE_CHECKING:
-    from nonebot.adapters import Bot
-
     from pallas_plugin_duel.duel_round_engine import DuelStacks
 
 _PENALTIES_KEY = "duel_penalties"

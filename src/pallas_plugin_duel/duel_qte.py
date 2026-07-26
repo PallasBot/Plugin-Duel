@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from nonebot import logger
+from nonebot.adapters import Bot, Event  # noqa: TC002  # NoneBot 依赖解析需要运行时可见
 from nonebot.adapters.onebot.v11 import GroupMessageEvent, Message
 from nonebot.rule import Rule
 from pallas.api.platform import is_fleet_bot_qq
@@ -38,7 +39,6 @@ from pallas_plugin_duel.duel_terms import (
 )
 
 if TYPE_CHECKING:
-    from nonebot.adapters import Bot, Event
     from nonebot.matcher import Matcher
 
     from pallas_plugin_duel.duel_round_engine import LoadedEvent
