@@ -133,6 +133,7 @@ __plugin_meta__ = PluginMetadata(
                 description="随机两只在线牛牛开八角笼决斗。用户要求决斗、八角笼、对战时使用。",
                 parameters={"type": "object", "properties": {}},
                 command_template="八角笼牛",
+                hints=["决斗", "八角笼", "对战", "来场决斗"],
             ),
             llm_command_tool_row(
                 name="duel.duel",
@@ -149,6 +150,7 @@ __plugin_meta__ = PluginMetadata(
                     "required": ["opponent_qq"],
                 },
                 command_template="牛牛决斗 [CQ:at,qq={opponent_qq}]",
+                hints=["决斗", "跟他决斗", "点名决斗"],
             ),
         ],
         "ingress_fanout": {
