@@ -203,7 +203,7 @@ async def resolve_shard_group_online_bot_ids(group_id: int) -> list[int]:
     relaxed = sorted(q for q in catalog if q in get_cluster_online_bot_ids())
     # member list 不可用且 presence 足够：跳过全 catalog 逐号 probe
     if member_api_unusable and len(relaxed) >= 2:
-        logger.warning(
+        logger.debug(
             "duel: group {} member API unusable, use presence-online fleet (n={})",
             group_id,
             len(relaxed),
@@ -212,21 +212,22 @@ async def resolve_shard_group_online_bot_ids(group_id: int) -> list[int]:
 
     probed = await probe_fleet_bots_in_group(caller, group_id, catalog)
     if len(probed) >= 2:
+        # fallback 已成功：DEBUG，避免每局决斗刷 WARNING
         if list_err:
-            logger.warning(
+            logger.debug(
                 "duel: get_group_member_list failed group={} per-bot probe (found={}): {}",
                 group_id,
                 len(probed),
                 list_err,
             )
         elif list_empty or not member_ids:
-            logger.warning(
+            logger.debug(
                 "duel: member list empty/unparsed group={} per-bot probe (found={})",
                 group_id,
                 len(probed),
             )
         else:
-            logger.warning(
+            logger.debug(
                 "duel: group {} fleet∩member_list={} catalog={} per-bot probe (found={})",
                 group_id,
                 len(out),
@@ -236,7 +237,7 @@ async def resolve_shard_group_online_bot_ids(group_id: int) -> list[int]:
         return probed
 
     if len(relaxed) >= 2:
-        logger.warning(
+        logger.debug(
             "duel: group {} member API unusable, use presence-online fleet (n={})",
             group_id,
             len(relaxed),
@@ -262,7 +263,7 @@ async def resolve_shard_group_online_bot_ids(group_id: int) -> list[int]:
             len(probed),
         )
     elif probed:
-        logger.warning(
+        logger.debug(
             "duel: group {} fleet∩member_list={} catalog={} per-bot probe (found={})",
             group_id,
             len(out),
