@@ -5,6 +5,10 @@
 
 ## [Unreleased]
 
+## [4.0.17] - 2026-07-28
+
+- fix(logs): fleet 探测 fallback 成功时降为 DEBUG，避免决斗刷 WARNING
+
 ## [4.0.16] - 2026-07-26
 
 - feat(llm_tools): 为口令工具补充口语 hints
