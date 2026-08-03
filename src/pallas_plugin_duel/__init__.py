@@ -20,7 +20,12 @@ from pallas.api.metadata import (
     usage_line,
 )
 from pallas.api.perm import group_message_permission_for_command
-from pallas.api.platform import llm_command_tool_row, text_matches_plugin_fanout
+from pallas.api.platform import (
+    bind_group_owned_gate,
+    llm_command_tool_row,
+    release_group_owned_gate_sync,
+    text_matches_plugin_fanout,
+)
 from pallas.product.llm.knowledge.declare import knowledge_source_row
 
 from pallas_plugin_duel import duel_penalty  # noqa: F401 — 注册惩罚消息 matcher
@@ -156,6 +161,14 @@ __plugin_meta__ = PluginMetadata(
         "ingress_fanout": {
             "scope": "always",
             "regexes": [r"^八角笼(?:牛|斗)(?:\s*\d{1,2}\s*(?:幕|回合))?\s*$"],
+        },
+        "hosted_activity_ingress": {
+            "plugin_key": "duel",
+            "activity_namespace": "duel_group",
+            "command_prefixes": ["牛牛决斗", "八角笼牛", "八角笼斗", "决斗事件重载"],
+            "always_pass_prefixes": ["牛牛决斗", "八角笼牛", "八角笼斗"],
+            "session_flag": "session_pair",
+            "speak_at_fleet_bot_only": False,
         },
         "menu_data": [
             {
@@ -372,6 +385,7 @@ async def run_duel_match(
     if gate == "cooldown":
         return
 
+    await bind_group_owned_gate("duel", event.group_id, int(event.self_id), gate_sec=7200)
     if bot_mode:
         await start_duel_pair(event.group_id, int(challenger_id), int(defender_id))
 
@@ -388,6 +402,7 @@ async def run_duel_match(
             total_rounds=total_rounds,
         )
     finally:
+        release_group_owned_gate_sync("duel", event.group_id)
         end_duel_group(event.group_id)
         if bot_mode:
             await clear_duel_pair(event.group_id)
