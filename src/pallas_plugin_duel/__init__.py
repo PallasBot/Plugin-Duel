@@ -117,6 +117,7 @@ __plugin_meta__ = PluginMetadata(
         "help_tag": "fun",
         "version": PLUGIN_EXTRA_VERSION,
         "menu_template": PLUGIN_MENU_TEMPLATE,
+        "ingress_route": {"passive": True},
         "command_permissions": [
             {"id": "duel.duel", "label": "牛牛决斗", "default": "everyone"},
             {"id": "duel.cage", "label": "八角笼牛", "default": "everyone"},
@@ -168,7 +169,7 @@ __plugin_meta__ = PluginMetadata(
             "command_prefixes": ["牛牛决斗", "八角笼牛", "八角笼斗", "决斗事件重载"],
             "always_pass_prefixes": ["牛牛决斗", "八角笼牛", "八角笼斗"],
             "session_flag": "session_pair",
-            "speak_at_fleet_bot_only": False,
+            "speak_at_fleet_bot_only": True,
         },
         "menu_data": [
             {

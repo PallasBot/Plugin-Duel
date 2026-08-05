@@ -414,7 +414,7 @@ def parse_duel_at_qqs(event: GroupMessageEvent) -> list[str]:
         if qq is None:
             continue
         s = str(qq)
-        if s == "all" or s in seen:
+        if not (s.isascii() and s.isdecimal()) or s in seen:
             continue
         seen.add(s)
         qqs.append(s)
@@ -422,7 +422,7 @@ def parse_duel_at_qqs(event: GroupMessageEvent) -> list[str]:
     if raw and ("[CQ:at," in raw or "at,qq=" in raw):
         for m in _AT_CQ_RE.finditer(raw):
             s = m.group(1)
-            if s != "all" and s not in seen:
+            if s.isascii() and s.isdecimal() and s not in seen:
                 seen.add(s)
                 qqs.append(s)
     return qqs

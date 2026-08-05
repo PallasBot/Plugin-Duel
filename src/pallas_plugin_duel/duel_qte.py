@@ -517,14 +517,25 @@ async def duel_qte_message_rule(bot: Bot, event: Event) -> bool:
     if race is not None and not race.future.done() and time.time() <= race.deadline:
         uid = event.get_user_id()
         if uid in (race.challenger_id, race.defender_id):
-            return plain == race.required_key
+            matched = plain == race.required_key
+            logger.info(
+                f"duel qte input sid=r_{gid} kind=race uid={uid} matched={matched} "
+                f"deadline={race.deadline:.3f} text={plain!r} expected={race.required_key!r}"
+            )
+            return matched
     sid = qte_session_id(event.group_id, event.get_user_id())
     sess = _sessions.get(sid)
     if sess is None or sess.future.done():
         return False
     if time.time() > sess.deadline:
+        logger.info(f"duel qte expired sid={sid} deadline={sess.deadline:.3f}")
         return False
-    return plain == sess.required_key
+    matched = plain == sess.required_key
+    logger.info(
+        f"duel qte input sid={sid[0]}:{sid[1]} kind=single uid={event.get_user_id()} matched={matched} "
+        f"deadline={sess.deadline:.3f} text={plain!r} expected={sess.required_key!r}"
+    )
+    return matched
 
 
 duel_qte_exact_rule = Rule(duel_qte_message_rule)
@@ -538,6 +549,7 @@ def complete_duel_qte(event: GroupMessageEvent) -> None:
     if race is not None and not race.future.done() and uid in (race.challenger_id, race.defender_id):
         if event.get_plaintext().strip() == race.required_key:
             race.future.set_result(uid)
+            logger.info(f"duel qte completed sid=r_{gid} kind=race uid={uid}")
             sync_active_qte_group(gid)
         return
     sid = qte_session_id(event.group_id, uid)
@@ -545,6 +557,7 @@ def complete_duel_qte(event: GroupMessageEvent) -> None:
     if sess is None or sess.future.done():
         return
     sess.future.set_result(True)
+    logger.info(f"duel qte completed sid={sid[0]}:{sid[1]} kind=single uid={uid}")
     sync_active_qte_group(gid)
 
 
@@ -844,6 +857,10 @@ async def _run_operator_intrusion_race_qte(
         challenger_id=challenger_id,
         defender_id=defender_id,
     )
+    logger.info(
+        f"duel qte opened sid=r_{gid} kind=intrusion_race users={challenger_id},{defender_id} "
+        f"deadline={deadline:.3f} expected={required_key!r}"
+    )
     sync_active_qte_group(gid)
     schedule_bot_race_qte_auto_answer(
         group_id,
@@ -859,6 +876,7 @@ async def _run_operator_intrusion_race_qte(
         winner_uid = await asyncio.wait_for(fut, timeout=window_sec + 1.0)
     except TimeoutError:
         winner_uid = None
+        logger.info(f"duel qte timed out sid=r_{gid} kind=intrusion_race deadline={deadline:.3f}")
     finally:
         _race_sessions.pop(gid, None)
         sync_active_qte_group(gid)
@@ -1159,6 +1177,10 @@ async def _run_operator_intrusion_qte(
         return
 
     _sessions[sid] = _DuelQteSession(future=fut, required_key=required_key, deadline=deadline)
+    logger.info(
+        f"duel qte opened sid={sid[0]}:{sid[1]} kind=intrusion uid={responder} "
+        f"deadline={deadline:.3f} expected={required_key!r}"
+    )
     sync_active_qte_group(sid[0])
     schedule_bot_qte_auto_answer(group_id, responder, required_key, fut, window_sec, qte_kind="intrusion")
     ok = False
@@ -1166,6 +1188,7 @@ async def _run_operator_intrusion_qte(
         ok = await asyncio.wait_for(fut, timeout=window_sec + 1.0)
     except TimeoutError:
         ok = False
+        logger.info(f"duel qte timed out sid={sid[0]}:{sid[1]} kind=intrusion deadline={deadline:.3f}")
     finally:
         _sessions.pop(sid, None)
         sync_active_qte_group(sid[0])
@@ -1410,6 +1433,10 @@ async def _run_keyword_race_qte(
         challenger_id=challenger_id,
         defender_id=defender_id,
     )
+    logger.info(
+        f"duel qte opened sid=r_{gid} kind=keyword_race users={challenger_id},{defender_id} "
+        f"deadline={deadline:.3f} expected={required_key!r}"
+    )
     sync_active_qte_group(gid)
     schedule_bot_race_qte_auto_answer(
         group_id,
@@ -1425,6 +1452,7 @@ async def _run_keyword_race_qte(
         winner_uid = await asyncio.wait_for(fut, timeout=window_sec + 1.0)
     except TimeoutError:
         winner_uid = None
+        logger.info(f"duel qte timed out sid=r_{gid} kind=keyword_race deadline={deadline:.3f}")
     finally:
         _race_sessions.pop(gid, None)
         sync_active_qte_group(gid)
@@ -1637,6 +1665,10 @@ async def run_event_qte_if_any(
         return
 
     _sessions[sid] = _DuelQteSession(future=fut, required_key=required_key, deadline=deadline)
+    logger.info(
+        f"duel qte opened sid={sid[0]}:{sid[1]} kind=keyword uid={responder} "
+        f"deadline={deadline:.3f} expected={required_key!r}"
+    )
     sync_active_qte_group(sid[0])
     schedule_bot_qte_auto_answer(
         group_id,
@@ -1652,6 +1684,7 @@ async def run_event_qte_if_any(
         ok = await asyncio.wait_for(fut, timeout=window_sec + 1.0)
     except TimeoutError:
         ok = False
+        logger.info(f"duel qte timed out sid={sid[0]}:{sid[1]} kind=keyword deadline={deadline:.3f}")
     finally:
         _sessions.pop(sid, None)
         sync_active_qte_group(sid[0])
