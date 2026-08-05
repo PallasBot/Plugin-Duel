@@ -11,6 +11,7 @@ from nonebot.adapters.onebot.v11 import (
 from nonebot.plugin import PluginMetadata
 from nonebot.rule import Rule
 from nonebot.typing import T_State
+from packages.help.plugin_manager import is_plugin_disabled
 from pallas.api.metadata import (
     PLUGIN_EXTRA_VERSION,
     PLUGIN_HOMEPAGE,
@@ -266,22 +267,32 @@ __plugin_meta__ = PluginMetadata(
 BLOCK_LIST: list[int] = []
 
 
+async def duel_plugin_disabled(bot: Bot, event: GroupMessageEvent) -> bool:
+    return event.group_id in BLOCK_LIST or await is_plugin_disabled(
+        "duel", event.group_id, int(event.self_id), bot=bot, event=event
+    )
+
+
 async def is_reload_duel_events(bot: Bot, event: GroupMessageEvent, state: T_State) -> bool:
-    if event.group_id in BLOCK_LIST:
+    if await duel_plugin_disabled(bot, event):
         return False
     return event.get_plaintext().strip() == "决斗事件重载"
 
 
 async def is_duel_msg(bot: Bot, event: GroupMessageEvent, state: T_State) -> bool:
-    if event.group_id in BLOCK_LIST:
+    if await duel_plugin_disabled(bot, event):
         return False
     return event.get_plaintext().strip().startswith("牛牛决斗")
 
 
 async def is_cage_msg(bot: Bot, event: GroupMessageEvent, state: T_State) -> bool:
-    if event.group_id in BLOCK_LIST:
+    if await duel_plugin_disabled(bot, event):
         return False
     return text_matches_plugin_fanout(event.get_plaintext(), "duel")
+
+
+async def is_duel_qte_msg(bot: Bot, event: GroupMessageEvent, state: T_State) -> bool:
+    return not await duel_plugin_disabled(bot, event) and await duel_qte_exact_rule(bot, event, state)
 
 
 duel_msg = on_message(
@@ -299,7 +310,7 @@ cage_msg = on_message(
 duel_qte_msg = on_message(
     priority=2,
     block=True,
-    rule=duel_qte_exact_rule,
+    rule=Rule(is_duel_qte_msg),
     permission=permission.GROUP,
 )
 reload_duel_events_msg = on_message(
